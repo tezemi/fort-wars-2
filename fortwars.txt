@@ -1,0 +1,12 @@
+"fortwars"
+{
+	"base"		"sandbox"
+	"title"		"Fort Wars"
+	"maps"		"^gm_"
+	"menusystem"	"1"
+
+	"settings"
+	{
+
+	}
+}
