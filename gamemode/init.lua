@@ -1,8 +1,8 @@
 --[[---------------------------------------------------------
 
-  Sandbox Gamemode
+  Fortwars 2 Gamemode
 
-  This is GMod's default gamemode
+  Based on Sandbox, modified for fort builting and fighting!
 
 -----------------------------------------------------------]]
 
@@ -11,39 +11,97 @@
 --
 fortwars = {};
 
+--
 -- These files get sent to the client
+--
+AddCSLuaFile("cl_hints.lua");
+AddCSLuaFile("cl_init.lua");
+AddCSLuaFile("cl_notice.lua");
+AddCSLuaFile("cl_search_models.lua");
+AddCSLuaFile("cl_spawnmenu.lua");
+AddCSLuaFile("cl_worldtips.lua");
+AddCSLuaFile("persistence.lua");
+AddCSLuaFile("player_extension.lua");
+AddCSLuaFile("save_load.lua");
+AddCSLuaFile("shared.lua");
+AddCSLuaFile("gui/IconEditor.lua");
 
-AddCSLuaFile( "cl_hints.lua" )
-AddCSLuaFile( "cl_init.lua" )
-AddCSLuaFile( "cl_notice.lua" )
-AddCSLuaFile( "cl_search_models.lua" )
-AddCSLuaFile( "cl_spawnmenu.lua" )
-AddCSLuaFile( "cl_worldtips.lua" )
-AddCSLuaFile( "persistence.lua" )
-AddCSLuaFile( "player_extension.lua" )
-AddCSLuaFile( "save_load.lua" )
-AddCSLuaFile( "shared.lua" )
-AddCSLuaFile( "gui/IconEditor.lua" )
+--
+-- Includes
+--
+include("shared.lua");
+include("commands.lua");
+include("player.lua");
+include("spawnmenu/init.lua");
 
-include( 'shared.lua' )
-include( 'commands.lua' )
-include( 'player.lua' )
-include( 'spawnmenu/init.lua' )
+--
+-- Network Strings
+--
+util.AddNetworkString("FW_RoundState")
+
+--
+-- Global Variables
+--
+SetGlobalFloat("fw_build_end", -1);
 
 --
 -- Make BaseClass available
 --
-DEFINE_BASECLASS( "gamemode_base" )
+DEFINE_BASECLASS("gamemode_base");
+
+--
+-- API Functions
+--
+function fortwars.SendRoundState(state, ply)
+
+	net.Start("FW_RoundState");
+	net.WriteInt(state, 32);
+
+	return ply and net.Send(ply) or net.Broadcast();
+
+ end
+
+function fortwars.GetRoundState()
+
+	return GAMEMODE.roundState;
+
+end
+
+function fortwars.SetRoundState(state)
+
+	GAMEMODE.roundState = state;
+ 
+	fortwars.SendRoundState(state);
+
+end
+
+--[[---------------------------------------------------------
+	Name: gamemode:Initialize()
+	Desc: Called when a player spawns
+-----------------------------------------------------------]]
+function GM:Initialize()
+
+	GAMEMODE.roundState = ROUND_BUILD;
+
+end
 
 --[[---------------------------------------------------------
 	Name: gamemode:PlayerSpawn()
 	Desc: Called when a player spawns
 -----------------------------------------------------------]]
-function GM:PlayerSpawn( pl, transiton )
+function GM:PlayerSpawn(ply, transiton)
 
-	player_manager.SetPlayerClass( pl, "player_sandbox" )
+	if (fortwars.GetRoundState() == ROUND_BUILD) then
 
-	BaseClass.PlayerSpawn( self, pl, transiton )
+		player_manager.SetPlayerClass(ply, "player_build");
+	
+	else
+
+		player_manager.SetPlayerClass(ply, "player_fight");
+
+	end
+
+	BaseClass.PlayerSpawn(self, ply, transiton);
 
 end
 
@@ -177,3 +235,44 @@ function GM:CanEditVariable( ent, ply, key, val, editor )
 	return true
 
 end
+
+--
+-- Console Commands
+--
+local function ForceRoundChange(ply, command, args, argsStr)
+
+	if (not IsValid(ply)) or ply:IsAdmin() or ply:IsSuperAdmin() or cvars.Bool("sv_cheats", 0) then
+
+		if (argsStr ~= "ROUND_BUILD" and argsStr ~= "ROUND_FIGHT" and argsStr ~= "0" and argsStr ~= "1") then
+
+			ply:PrintMessage(HUD_PRINTCONSOLE, "Not a valid round state. Must be ROUND_BUILD or ROUND_FIGHT, or 0 or 1.");
+
+			return;
+
+		end
+
+		local state = 0;
+		if (argsStr == "0" or argsStr == "1") then
+
+			state = tonumber(argsStr);
+
+		elseif (argsStr == "ROUND_BUILD") then
+
+			state = 0;
+
+		elseif (argsStr == "ROUND_FIGHT") then
+
+			state = 1;
+
+		end
+
+		fortwars.SetRoundState(state);
+
+	else
+
+		ply:PrintMessage(HUD_PRINTCONSOLE, "Can't run this command. You must be an admin or must enable sv_cheats.");
+
+	end
+
+end
+concommand.Add("fw_force_round_change", ForceRoundChange);

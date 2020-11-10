@@ -10,6 +10,8 @@ include( "player_extension.lua" )
 include( "persistence.lua" )
 include( "save_load.lua" )
 include( "player_class/player_sandbox.lua" )
+include("player_class/player_build.lua");
+include("player_class/player_fight.lua");
 include( "drive/drive_sandbox.lua" )
 include( "editor_player.lua" )
 
@@ -22,6 +24,12 @@ GM.Name 	= "Sandbox"
 GM.Author 	= "TEAM GARRY"
 GM.Email 	= "teamgarry@garrysmod.com"
 GM.Website 	= "www.garrysmod.com"
+
+--
+-- Constants
+--
+ROUND_BUILD = 0;
+ROUND_FIGHT = 1;
 
 --[[
  Note: This is so that in addons you can do stuff like

@@ -1,0 +1,17 @@
+{
+    "Lua.diagnostics.globals": [
+        "AddCSLuaFile",
+        "fortwars",
+        "include",
+        "SetGlobalFloat",
+        "DEFINE_BASECLASS",
+        "GAMEMODE",
+        "GM",
+        "GetGlobalFloat",
+        "player_manager",
+        "BaseClass"
+    ],
+    "Lua.diagnostics.disable": [
+        "undefined-global"
+    ]
+}
