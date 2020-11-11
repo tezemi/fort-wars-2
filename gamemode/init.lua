@@ -35,6 +35,11 @@ include("player.lua");
 include("spawnmenu/init.lua");
 
 --
+-- Convars
+--
+CreateConVar("fw_start_weapons", "weapon_crowbar weapon_pistol", FCVAR_NOTIFY + FCVAR_REPLICATED);
+
+--
 -- Network Strings
 --
 util.AddNetworkString("FW_RoundState")
@@ -243,7 +248,7 @@ local function ForceRoundChange(ply, command, args, argsStr)
 
 	if (not IsValid(ply)) or ply:IsAdmin() or ply:IsSuperAdmin() or cvars.Bool("sv_cheats", 0) then
 
-		if (argsStr ~= "ROUND_BUILD" and argsStr ~= "ROUND_FIGHT" and argsStr ~= "0" and argsStr ~= "1") then
+		if (args[1] ~= "ROUND_BUILD" and args[1] ~= "ROUND_FIGHT" and args[1] ~= "0" and args[1] ~= "1") then
 
 			ply:PrintMessage(HUD_PRINTCONSOLE, "Not a valid round state. Must be ROUND_BUILD or ROUND_FIGHT, or 0 or 1.");
 
@@ -252,15 +257,15 @@ local function ForceRoundChange(ply, command, args, argsStr)
 		end
 
 		local state = 0;
-		if (argsStr == "0" or argsStr == "1") then
+		if (args[1] == "0" or args[1] == "1") then
 
-			state = tonumber(argsStr);
+			state = tonumber(args[1]);
 
-		elseif (argsStr == "ROUND_BUILD") then
+		elseif (args[1] == "ROUND_BUILD") then
 
 			state = 0;
 
-		elseif (argsStr == "ROUND_FIGHT") then
+		elseif (args[1] == "ROUND_FIGHT") then
 
 			state = 1;
 
@@ -276,3 +281,47 @@ local function ForceRoundChange(ply, command, args, argsStr)
 
 end
 concommand.Add("fw_force_round_change", ForceRoundChange);
+
+local function AddStartWeapon(ply, command, args, argsStr)
+
+	if (not IsValid(ply)) or ply:IsAdmin() or ply:IsSuperAdmin() or cvars.Bool("sv_cheats", 0) then
+
+		local convar = GetConVar("fw_start_weapons");
+		convar:SetString(convar:GetString() .. " " ..  args[1]);
+
+	else
+
+		ply:PrintMessage(HUD_PRINTCONSOLE, "Can't run this command. You must be an admin or must enable sv_cheats.");
+
+	end
+
+end
+concommand.Add("fw_start_weapon_add", AddStartWeapon);
+
+local function RemoveStartWeapon(ply, command, args, argsStr)
+
+	if (not IsValid(ply)) or ply:IsAdmin() or ply:IsSuperAdmin() or cvars.Bool("sv_cheats", 0) then
+
+		local convar = GetConVar("fw_start_weapons");
+		local currentString = convar:GetString();
+
+		if (string.match(currentString, args[1])) then
+
+			local removedWeapons = currentString:gsub("%" .. args[1], "");
+			local trimmed = string.gsub(removedWeapons, '^%s*(.-)%s*$', '%1');
+			convar:SetString(trimmed);
+
+		else
+			
+			ply:PrintMessage(HUD_PRINTCONSOLE, "Can't remove " .. args[1] .. " from the start weapon list. It doesn't exist.");
+
+		end
+
+	else
+
+		ply:PrintMessage(HUD_PRINTCONSOLE, "Can't run this command. You must be an admin or must enable sv_cheats.");
+
+	end
+
+end
+concommand.Add("fw_start_weapon_remove", RemoveStartWeapon);

@@ -10,10 +10,12 @@ function PLAYER:Loadout()
 
     self.Player:RemoveAllAmmo();
 
-    self.Player:Give("weapon_crowbar");
+    local convar = GetConVar("fw_start_weapons");
+    for s in string.gmatch(convar:GetString(), "%S+") do
 
-    self.Player:GiveAmmo(64, "Pistol", true);
-    self.Player:Give("weapon_pistol");
+        self.Player:Give(s);
+        
+    end
 
 end
 

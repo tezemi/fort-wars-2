@@ -113,7 +113,68 @@ end
 -----------------------------------------------------------]]
 function GM:AddToolMenuCategories()
 
-	-- Hook this function to add custom stuff
+	spawnmenu.AddToolMenuOption("Utilities", "Fort Wars", "fort_wars_config", "Starting Weapons", "", "", function(panel)
+
+		local list = vgui.Create("DListView", panel);
+		panel:AddItem(list);
+
+		list:SetSize(500, 300);
+		list:SetMultiSelect(true);
+		list:AddColumn("Start Weapons");
+
+		local convar = GetConVar("fw_start_weapons");
+		for i in string.gmatch(convar:GetString(), "%S+") do
+
+			list:AddLine(i);
+
+		end
+
+		local removeButton = vgui.Create("DButton", panel);
+		panel:AddItem(removeButton);
+				
+		removeButton:Dock(BOTTOM);
+		removeButton:SetText("Remove");
+
+		removeButton.DoClick = function()
+
+			local selectedItems = list:GetSelected();
+			local allItems = list:GetLines();
+			for k, v in pairs(selectedItems) do
+				
+				for l, w in pairs(allItems) do
+					
+					if (v:GetColumnText(1) == w:GetColumnText(1)) then
+
+						RunConsoleCommand("fw_start_weapon_remove", v:GetColumnText(1));
+						list:RemoveLine(l);
+
+					end
+					
+				end				
+
+			end
+
+		end
+
+		local addButton = vgui.Create("DButton", panel);
+		panel:AddItem(addButton);
+				
+		addButton:Dock(BOTTOM);
+		addButton:SetText("Add");
+
+		local entry = vgui.Create("DTextEntry", panel);
+		entry:DockMargin(0, 10, 0, 0);
+		entry:DockPadding(5, 0, 5, 0);
+		entry:Dock(TOP);
+
+		addButton.DoClick = function()
+
+			list:AddLine(entry:GetValue());
+			RunConsoleCommand("fw_start_weapon_add", entry:GetValue());
+
+		end
+
+	end);
 
 end
 

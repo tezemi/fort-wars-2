@@ -7,6 +7,13 @@
 
 	"settings"
 	{
-
+		1
+		{
+			"name"		"fw_start_weapons"
+			"text"		"Start Weapons"
+			"help"		"List of weapons the player starts with in fight mode."
+			"type"		"text"
+			"default"	"weapon_crowbar weapon_pistol"
+		}
 	}
 }
