@@ -38,11 +38,13 @@ include("spawnmenu/init.lua");
 -- Convars
 --
 CreateConVar("fw_start_weapons", "weapon_crowbar weapon_pistol", FCVAR_NOTIFY + FCVAR_REPLICATED);
+CreateConVar("fw_start_cash", "3000", FCVAR_NOTIFY + FCVAR_REPLICATED);
 
 --
 -- Network Strings
 --
-util.AddNetworkString("FW_RoundState")
+util.AddNetworkString("FW_RoundState");
+util.AddNetworkString("FW_EntityCosts");
 
 --
 -- Global Variables
@@ -95,7 +97,7 @@ end
 	Desc: Called when a player spawns
 -----------------------------------------------------------]]
 function GM:PlayerSpawn(ply, transiton)
-
+	
 	if (fortwars.GetRoundState() == ROUND_BUILD) then
 
 		player_manager.SetPlayerClass(ply, "player_build");
@@ -107,6 +109,22 @@ function GM:PlayerSpawn(ply, transiton)
 	end
 
 	BaseClass.PlayerSpawn(self, ply, transiton);
+
+end
+
+function GM:EntityRemoved(ent)
+
+	local plyOwner = ent:GetNWEntity("FW_PlayerOwner");
+
+	if (ent:GetNWEntity("FW_PlayerOwner") and ENTITY_COSTS[ent:GetClass()]) then
+
+		plyOwner:SetNWInt("FW_Cash", plyOwner:GetNWInt("FW_Cash", 0) + ENTITY_COSTS[ent:GetClass()]);
+
+	elseif (ent:GetNWEntity("FW_PlayerOwner") and ent:GetClass() == "prop_physics") then
+
+		plyOwner:SetNWInt("FW_Cash", plyOwner:GetNWInt("FW_Cash", 0) + fortwars.GetPropCost(ent));
+
+	end
 
 end
 
@@ -179,6 +197,12 @@ end
 function GM:PlayerInitialSpawn( ply, transiton )
 
 	BaseClass.PlayerInitialSpawn( self, ply, transiton )
+
+	ply:SetNWInt("FW_Cash", tonumber(GetConVar("fw_start_cash"):GetInt()));
+
+	net.Start("FW_EntityCosts");
+	net.WriteTable(ENTITY_COSTS);
+	net.Send(ply);
 
 end
 
@@ -325,3 +349,23 @@ local function RemoveStartWeapon(ply, command, args, argsStr)
 
 end
 concommand.Add("fw_start_weapon_remove", RemoveStartWeapon);
+
+local function RemoveStartWeapon(ply, command, args, argsStr)
+
+	if (not IsValid(ply)) or ply:IsAdmin() or ply:IsSuperAdmin() or cvars.Bool("sv_cheats", 0) then
+
+		if (args[1]) then
+
+			local value = tonumber(args[1]);
+			ply:SetNWInt("FW_Cash", value);
+
+		end
+
+	else
+
+		ply:PrintMessage(HUD_PRINTCONSOLE, "Can't run this command. You must be an admin or must enable sv_cheats.");
+
+	end
+
+end
+concommand.Add("fw_cash", RemoveStartWeapon);

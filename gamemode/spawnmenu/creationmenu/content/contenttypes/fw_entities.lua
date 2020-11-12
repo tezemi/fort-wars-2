@@ -46,16 +46,26 @@ hook.Add("PopulateFWEntities", "AddFWEntityContent", function(pnlContent, tree, 
 			self.PropPanel = vgui.Create("ContentContainer", pnlContent);
 			self.PropPanel:SetVisible(false);
 			self.PropPanel:SetTriggerSpawnlistChange(false);
-
+			
 			for k, ent in SortedPairsByMemberValue(v, "PrintName") do
 
-				spawnmenu.CreateContentIcon( ent.ScriptedEntityType or "entity", self.PropPanel, 
+				local icon = spawnmenu.CreateContentIcon( ent.ScriptedEntityType or "entity", self.PropPanel, 
 				{
 					nicename	= ent.PrintName or ent.ClassName,
 					spawnname	= ent.SpawnName,
 					material	= ent.IconOverride or "entities/" .. ent.SpawnName .. ".png",
 					admin		= false
 				});
+
+				if (ENTITY_COSTS[ent.SpawnName]) then
+					
+					icon:SetToolTip(ent.PrintName .. " ($" .. ENTITY_COSTS[ent.SpawnName] .. ")");					
+				
+				else
+
+					icon:SetToolTip(ent.PrintName .. " ($0)");
+
+				end
 
 			end
 		end

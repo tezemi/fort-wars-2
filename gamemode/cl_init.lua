@@ -9,6 +9,8 @@
 
 fortwars = {};
 
+ENTITY_COSTS = {};
+
 include( 'shared.lua' )
 include( 'cl_spawnmenu.lua' )
 include( 'cl_notice.lua' )
@@ -17,12 +19,33 @@ include( 'cl_worldtips.lua' )
 include( 'cl_search_models.lua' )
 include( 'gui/IconEditor.lua' )
 
+surface.CreateFont("Cash",
+{
+	font = "Trebuchet24",
+	size = 24,
+	weight = 800
+});
+
+local sf = surface
+local dr = draw
+local Tex_Corner8 = surface.GetTextureID( "gui/corner8" )
+
 --
 -- Make BaseClass available
 --
 DEFINE_BASECLASS( "gamemode_base" )
 
+local lastCash = -1;
+local cashCost = -1;
 local physgun_halo = CreateConVar( "physgun_halo", "1", { FCVAR_ARCHIVE }, "Draw the physics gun halo?" )
+
+function GetEntityCosts(len, ply)
+
+	ENTITY_COSTS = net.ReadTable();
+	print("Got entity costs!");
+
+end
+net.Receive("FW_EntityCosts", GetEntityCosts);
 
 function GM:Initialize()
 
@@ -87,12 +110,125 @@ function GM:UnfrozeObjects( num )
 
 end
 
+local function ShadowedText(text, font, x, y, color, xalign, yalign)
+
+	dr.SimpleText(text, font, x + 2, y + 2, Color(0, 0, 0, 255), xalign, yalign); 
+	dr.SimpleText(text, font, x, y, color, xalign, yalign);
+
+ end
+
+local function RoundedMeter( bs, x, y, w, h, color)
+	surface.SetDrawColor(color)
+ 
+	surface.DrawRect( x+bs, y, w-bs*2, h )
+	surface.DrawRect( x, y+bs, bs, h-bs*2 )
+ 
+	surface.SetTexture( Tex_Corner8 )
+	surface.DrawTexturedRectRotated( x + bs/2 , y + bs/2, bs, bs, 0 )
+	surface.DrawTexturedRectRotated( x + bs/2 , y + h -bs/2, bs, bs, 90 )
+ 
+	if w > 14 then
+	   surface.DrawRect( x+w-bs, y+bs, bs, h-bs*2 )
+	   surface.DrawTexturedRectRotated( x + w - bs/2 , y + bs/2, bs, bs, 270 )
+	   surface.DrawTexturedRectRotated( x + w - bs/2 , y + h - bs/2, bs, bs, 180 )
+	else
+	   surface.DrawRect( x + math.max(w-bs, bs), y, bs/2, h )
+	end
+ 
+ end
+ 
+
+local function PaintBar(x, y, w, h, colors, value)
+	-- Background
+	-- slightly enlarged to make a subtle border
+	draw.RoundedBox(8, x-1, y-1, w+2, h+2, Color(0, 0, 10, 200))
+ 
+	-- Fill
+	local width = w * math.Clamp(value, 0, 1)
+ 
+	if width > 0 then
+	   RoundedMeter(8, x, y, width, h, Color(25, 200, 25, 200))
+	end
+ end
+
+local function DrawBg(x, y, width, height, client)
+	-- Traitor area sizes
+	local th = 30
+	local tw = 170
+ 
+	-- Adjust for these
+	y = y - th
+	height = height + th
+ 
+	-- main bg area, invariant
+	-- encompasses entire area
+	draw.RoundedBox(8, x, y, width, height, Color(0, 0, 10, 200))
+ 
+	-- main border, traitor based
+	local col = Color(25, 200, 25, 200)
+	 
+	draw.RoundedBox(8, x, y, tw, th, col)
+end
+
 function GM:HUDPaint()
 
 	self:PaintWorldTips()
 
 	-- Draw all of the default stuff
 	BaseClass.HUDPaint( self )
+
+	local client = LocalPlayer();
+
+	local cashBackW = 90;
+	local cashBackH = 40;
+	local cashOffsetFromCenter = 1.06;
+
+	PaintBar(ScrW() / 2 - cashBackW / 2 + 1, ScrH() / cashOffsetFromCenter - cashBackH / 2 + 2, cashBackW, cashBackH, Color(25, 200, 25, 200), 1);
+
+	ShadowedText(tostring("$" .. client:GetNWInt("FW_Cash", 0)), "Cash", ScrW() / 2, (ScrH() / cashOffsetFromCenter), Color(255, 255, 255, 255), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER);	
+
+	local cashCostTimeName = "FW_CashCostTimer";
+
+	if (lastCash ~= client:GetNWInt("FW_Cash", 0)) then
+
+		if (lastCash ~= -1) then
+
+			cashCost = client:GetNWInt("FW_Cash", 0) - lastCash;
+
+			if (timer.Exists(cashCostTimeName)) then
+
+				timer.Start(cashCostTimeName);
+
+			else
+
+				timer.Create(cashCostTimeName, 3, 0, function()
+
+					cashCost = -1;
+
+				end);
+
+			end		
+
+		end
+
+		lastCash = client:GetNWInt("FW_Cash", 0);
+
+	end
+
+	local cashCostOffset = 1.1;
+
+	if (cashCost ~= -1) then
+
+		local color = Color(255, 25, 25, 255);
+		if (cashCost > 0) then
+
+			color = Color(25, 255, 25, 255);
+
+		end
+
+		ShadowedText(tostring("$" .. cashCost), "Cash", ScrW() / 2, (ScrH() / cashCostOffset), color, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER);	
+
+	end
 
 	self:PaintNotes()
 

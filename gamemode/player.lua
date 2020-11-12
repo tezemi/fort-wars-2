@@ -1,4 +1,36 @@
 
+--
+-- Default Fortwars entity prices
+--
+ENTITY_COSTS = {};
+ENTITY_COSTS["npc_turret_floor"] = 250;
+ENTITY_COSTS["npc_turret_ceiling"] = 400;
+ENTITY_COSTS["combine_mine"] = 75;
+
+--
+-- Call this to add your own entities
+--
+function fortwars.AssignCost(name, amount)
+
+   ENTITY_COSTS[name] = amount;
+
+end
+
+--
+-- Gives a arbitrary cost for a prop based on its size
+--
+function fortwars.GetPropCost(ent)
+
+   local propSize = ent:GetModelBounds().x + ent:GetModelBounds().y + ent:GetModelBounds().z;
+   propSize = math.abs(propSize);
+
+   local cost = propSize / 3;
+   cost = math.floor(cost);
+
+   return cost;
+
+end
+
 --[[---------------------------------------------------------
    Name: gamemode:PlayerSpawnObject( ply )
    Desc: Called to ask whether player is allowed to spawn any objects
@@ -100,7 +132,22 @@ end
 -----------------------------------------------------------]]
 function GM:PlayerSpawnSENT( ply, name )
 
-	return LimitReachedProcess( ply, "sents" )
+   if (ENTITY_COSTS[name]) then
+
+      local amountAfterBuy = ply:GetNWInt("FW_Cash", 0) - ENTITY_COSTS[name];
+      if (amountAfterBuy >= 0) then
+
+         return LimitReachedProcess(ply, "sents");
+
+      else
+
+         return false;
+
+      end
+
+   end
+
+	return LimitReachedProcess(ply, "sents");
 
 end
 
@@ -108,9 +155,24 @@ end
    Name: gamemode:PlayerSpawnNPC( ply, npc_type )
    Desc: Return true if player is allowed to spawn the NPC
 -----------------------------------------------------------]]
-function GM:PlayerSpawnNPC( ply, npc_type, equipment )
+function GM:PlayerSpawnNPC(ply, npc_type, equipment)
 
-	return LimitReachedProcess( ply, "npcs" )
+   if (ENTITY_COSTS[npc_type]) then
+
+      local amountAfterBuy = ply:GetNWInt("FW_Cash", 0) - ENTITY_COSTS[npc_type];
+      if (amountAfterBuy >= 0) then
+
+         return LimitReachedProcess(ply, "npcs");
+
+      else
+
+         return false;
+
+      end
+
+   end
+
+	return LimitReachedProcess(ply, "npcs");
 
 end
 
@@ -130,7 +192,21 @@ end
 -----------------------------------------------------------]]
 function GM:PlayerSpawnedProp( ply, model, ent )
 
-	ply:AddCount( "props", ent )
+   local cost = fortwars.GetPropCost(ent);
+   local amountAfterBuy = ply:GetNWInt("FW_Cash", 0) - cost;
+
+   if (amountAfterBuy >= 0) then
+
+      ply:SetNWInt("FW_Cash", amountAfterBuy);
+
+   else
+
+      ent:Remove();
+
+   end
+   
+   ply:AddCount("props", ent);
+   ent:SetNWEntity("FW_PlayerOwner", ply);
 
 end
 
@@ -158,9 +234,19 @@ end
    Name: gamemode:PlayerSpawnedNPC( ply, ent )
    Desc: Called after the player spawned an NPC
 -----------------------------------------------------------]]
-function GM:PlayerSpawnedNPC( ply, ent )
+function GM:PlayerSpawnedNPC(ply, ent)
 
-	ply:AddCount( "npcs", ent )
+   if (ENTITY_COSTS[ent:GetClass()]) then
+
+      local amountAfterBuy = ply:GetNWInt("FW_Cash", 0) - ENTITY_COSTS[ent:GetClass()];
+      ply:SetNWInt("FW_Cash", amountAfterBuy);
+
+   end
+   
+   ply:AddCount("npcs", ent);
+   ent:SetNWEntity("FW_PlayerOwner", ply);
+   ent:AddEntityRelationship(ply, D_LI, 99);
+   ent:SetColor(Color(25, 255, 25, 255));
 
 end
 
@@ -171,7 +257,15 @@ end
 -----------------------------------------------------------]]
 function GM:PlayerSpawnedSENT( ply, ent )
 
-	ply:AddCount( "sents", ent )
+   if (ENTITY_COSTS[ent:GetClass()]) then
+
+      local amountAfterBuy = ply:GetNWInt("FW_Cash", 0) - ENTITY_COSTS[ent:GetClass()];
+      ply:SetNWInt("FW_Cash", amountAfterBuy);
+
+   end
+
+   ply:AddCount("sents", ent);
+   ent:SetNWEntity("FW_PlayerOwner", ply);
 
 end
 

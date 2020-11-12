@@ -16,6 +16,8 @@ function PLAYER:Loadout()
         self.Player:Give(s);
         
     end
+    
+    self.Player:EquipSuit();
 
 end
 
