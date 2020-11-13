@@ -16,6 +16,77 @@ function fortwars.AssignCost(name, amount)
 
 end
 
+--[[---------------------------------------------------------
+   Name: fortwars.UpdateNPCRelationship(team, npc)
+   Desc: Updates an NPC's relationships, causing the NPC to
+         like people of the same team, and dislike
+         anyone else.
+-----------------------------------------------------------]]
+function fortwars.UpdateNPCRelationship(npc)
+
+   local npcTeam = npc:GetNWInt("FW_Team", 1);
+
+   for k, ply in pairs(player.GetAll()) do
+
+      if (ply:Team() == npcTeam or ply:Team() == TEAM_SPEC) then
+
+         npc:AddEntityRelationship(ply, D_LI, 99);
+
+      else
+
+         npc:AddEntityRelationship(ply, D_HT, 99);
+
+      end        
+
+   end
+
+   npc:SetColor(team.GetColor(npcTeam));
+
+end
+
+--[[---------------------------------------------------------
+   Name: fortwars.UpdateNPCRelationships()
+   Desc: Updates every NPC's relationship, and so more
+         expensive than the single NPC counterpart. 
+-----------------------------------------------------------]]
+function fortwars.UpdateNPCRelationships()
+
+   for kn, npc in pairs(ents.FindByClass("npc_*")) do
+
+      for kp, ply in pairs(player.GetAll()) do
+
+         local npcTeam = npc:GetNWInt("FW_Team", 1);
+
+         if (ply:Team() == npcTeam or ply:Team() == TEAM_SPEC) then
+
+            npc:AddEntityRelationship(ply, D_LI, 99);
+
+         else
+
+            npc:AddEntityRelationship(ply, D_HT, 99);
+
+         end
+
+      end
+
+   end
+
+end
+
+--[[---------------------------------------------------------
+   Name: fortwars.SetTeam(ply, team)
+   Desc: Sets the player's team and forces a respawn.
+-----------------------------------------------------------]]
+function fortwars.SetTeam(ply, teamID)
+
+   ply:SetTeam(teamID);
+   ply:Spawn();
+   PrintMessage(HUD_PRINTTALK, ply:Nick() .. " joined the " .. team.GetName(teamID) .. " team.");
+   fortwars.UpdateNPCRelationships();
+   cleanup.CC_Cleanup(ply, "gmod_cleanup", {});
+
+end
+
 --
 -- Gives a arbitrary cost for a prop based on its size
 --
@@ -30,6 +101,14 @@ function fortwars.GetPropCost(ent)
    return cost;
 
 end
+
+function RequestJoinTeam(len, ply)
+
+   local teamID = net.ReadInt(32);
+   fortwars.SetTeam(ply, teamID);
+
+end
+net.Receive("FW_RequestJoinTeam", RequestJoinTeam);
 
 --[[---------------------------------------------------------
    Name: gamemode:PlayerSpawnObject( ply )
@@ -245,8 +324,8 @@ function GM:PlayerSpawnedNPC(ply, ent)
    
    ply:AddCount("npcs", ent);
    ent:SetNWEntity("FW_PlayerOwner", ply);
-   ent:AddEntityRelationship(ply, D_LI, 99);
-   ent:SetColor(Color(25, 255, 25, 255));
+   ent:SetNWInt("FW_Team", ply:Team());
+   fortwars.UpdateNPCRelationship(ent);
 
 end
 

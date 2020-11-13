@@ -39,6 +39,126 @@ local lastCash = -1;
 local cashCost = -1;
 local physgun_halo = CreateConVar( "physgun_halo", "1", { FCVAR_ARCHIVE }, "Draw the physics gun halo?" )
 
+function fortwars.ShowWarning(text, onContinueFunction, onCancelFunction)
+
+	local width = 350;
+	local height = 200;
+
+	local menu = vgui.Create("DFrame");
+	menu:SetTitle("WARNING")
+	menu:SetSize(width, height);
+	menu:Center();
+	menu:MakePopup();
+	menu.Paint = function(self, w, h)
+		
+		draw.RoundedBox(0, 0, 0, w, h, Color(104, 111, 114, 255));
+		
+	end
+
+	local label = vgui.Create("DLabel", menu);
+	label:SetText(text);
+	label:SizeToContents();
+	label:SetSize(200, 200)
+	label:SetWrap(true);
+	label:Center();
+
+	local cButton = vgui.Create("DButton", menu);
+	cButton:SetText("Continue");
+	cButton:SetTextColor(Color(255, 255, 255, 255));
+	cButton:SetPos(65, 140);
+	cButton:SetSize(80, 40);
+	cButton.Paint = function(self, w, h)
+
+		draw.RoundedBox(0, 0, 0, w, h, Color(45, 45, 45, 255));
+
+	end
+
+	cButton.DoClick = onContinueFunction;
+
+end
+
+function fortwars.ShowTeamSelectMenu()
+
+	local width = 300;
+	local height = 350;
+
+	local menu = vgui.Create("DFrame");
+	menu:SetTitle("Select Team")
+	menu:SetSize(width, height);
+	menu:Center();
+	menu:MakePopup();
+	menu.Paint = function(self, w, h)
+		
+		draw.RoundedBox(0, 0, 0, w, h, Color(104, 111, 114, 150));
+		
+	end
+
+	local buttonW = 200;
+	local buttonH = 50;
+
+	local redTeamButton = vgui.Create("DButton", menu);
+	redTeamButton:SetText(team.GetName(1));
+	redTeamButton:SetTextColor(Color(255, 255, 255, 255));
+	redTeamButton:SetPos(width / 2 - buttonW / 2, 50);
+	redTeamButton:SetSize(buttonW, buttonH);
+	redTeamButton.Paint = function(self, w, h)
+
+		draw.RoundedBox(0, 0, 0, w, h, team.GetColor(1));
+
+	end
+
+	redTeamButton.DoClick = function()
+
+		--fortwars.ShowWarning("Changing teams will clean up everything you've spawned.\nAre you sure you want to switch teams?");
+		net.Start("FW_RequestJoinTeam");
+		net.WriteInt(1, 32);
+		net.SendToServer();
+		menu:Close();
+
+	end
+
+	local blueTeamButton = vgui.Create("DButton", menu);
+	blueTeamButton:SetText(team.GetName(2));
+	blueTeamButton:SetTextColor(Color(255, 255, 255, 255));
+	blueTeamButton:SetPos(width / 2 - buttonW / 2, 150);
+	blueTeamButton:SetSize(buttonW, buttonH);
+	blueTeamButton.Paint = function(self, w, h)
+
+		draw.RoundedBox(0, 0, 0, w, h, team.GetColor(2));
+
+	end
+
+	blueTeamButton.DoClick = function()
+
+		net.Start("FW_RequestJoinTeam");
+		net.WriteInt(2, 32);
+		net.SendToServer();
+		menu:Close();
+
+	end
+
+	local specButton = vgui.Create("DButton", menu);
+	specButton:SetText(team.GetName(3));
+	specButton:SetTextColor(Color(255, 255, 255, 255));
+	specButton:SetPos(width / 2 - buttonW / 2, 250);
+	specButton:SetSize(buttonW, buttonH);
+	specButton.Paint = function(self, w, h)
+
+		draw.RoundedBox(0, 0, 0, w, h, team.GetColor(3));
+
+	end
+
+	specButton.DoClick = function()
+
+		net.Start("FW_RequestJoinTeam");
+		net.WriteInt(3, 32);
+		net.SendToServer();
+		menu:Close();
+
+	end
+
+end
+
 function GetEntityCosts(len, ply)
 
 	ENTITY_COSTS = net.ReadTable();
@@ -49,7 +169,9 @@ net.Receive("FW_EntityCosts", GetEntityCosts);
 
 function GM:Initialize()
 
-	BaseClass.Initialize( self )
+	BaseClass.Initialize(self);
+
+	fortwars.ShowTeamSelectMenu();
 
 end
 
@@ -171,6 +293,14 @@ local function DrawBg(x, y, width, height, client)
 end
 
 function GM:HUDPaint()
+
+	if (fortwars.IsSpec(LocalPlayer())) then
+
+		-- Put spectator HUD here
+
+		return;	-- Don't draw normal HUD
+
+	end
 
 	self:PaintWorldTips()
 
@@ -304,3 +434,10 @@ function GM:NetworkEntityCreated( ent )
 	end
 
 end
+
+local function ShowTeamSelectMenuCommand(ply, command, args, argsStr)
+
+	fortwars.ShowTeamSelectMenu();
+
+end
+concommand.Add("fw_team_select_menu", ShowTeamSelectMenuCommand);

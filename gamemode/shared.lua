@@ -31,6 +31,10 @@ GM.Website 	= "www.garrysmod.com"
 ROUND_BUILD = 0;
 ROUND_FIGHT = 1;
 
+TEAM_RED = 1;
+TEAM_BLUE = 2;
+TEAM_SPEC = 3;
+
 --[[
  Note: This is so that in addons you can do stuff like
  
@@ -49,8 +53,21 @@ cleanup.Register( "ropeconstraints" )
 cleanup.Register( "sents" )
 cleanup.Register( "vehicles" )
 
-
 local physgun_limited = CreateConVar( "physgun_limited", "0", FCVAR_REPLICATED )
+
+function fortwars.IsSpec(ply)
+
+	return ply:GetObserverMode() ~= OBS_MODE_NONE; 
+
+end
+
+function GM:CreateTeams()
+
+	team.SetUp(1, "Red", Color(255, 25, 25));
+	team.SetUp(2, "Blue", Color(25, 25, 255));
+	team.SetUp(3, "Spectators", Color(25, 25, 25));
+
+end
 
 --[[---------------------------------------------------------
    Name: gamemode:CanTool( ply, trace, mode )
@@ -192,15 +209,27 @@ end
 -----------------------------------------------------------]]
 function GM:PlayerNoClip( pl, on )
 	
+	return true;
+
 	-- Don't allow if player is in vehicle
-	if ( !IsValid( pl ) || pl:InVehicle() || !pl:Alive() ) then return false end
+	--if ( !IsValid( pl ) || pl:InVehicle() || !pl:Alive() ) then return false end
 	
 	-- Always allow to turn off noclip, and in single player
-	if ( !on || game.SinglePlayer() ) then return true end
+	--if ( !on || game.SinglePlayer() ) then return true end
 
-	return GetConVarNumber( "sbox_noclip" ) > 0
+	--return GetConVarNumber( "sbox_noclip" ) > 0
 	
 end
+
+function GM:PlayerFootstep(ply, pos, foot, sound, volume, rf)
+
+	if (IsValid(ply) and fortwars.IsSpec(ply)) then
+
+	   return true;
+
+	end
+
+ end 
 
 --[[---------------------------------------------------------
    Name: gamemode:CanProperty( pl, property, ent )

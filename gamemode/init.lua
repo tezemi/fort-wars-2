@@ -45,6 +45,7 @@ CreateConVar("fw_start_cash", "3000", FCVAR_NOTIFY + FCVAR_REPLICATED);
 --
 util.AddNetworkString("FW_RoundState");
 util.AddNetworkString("FW_EntityCosts");
+util.AddNetworkString("FW_RequestJoinTeam");
 
 --
 -- Global Variables
@@ -84,7 +85,7 @@ end
 
 --[[---------------------------------------------------------
 	Name: gamemode:Initialize()
-	Desc: Called when a player spawns
+	Desc: Called when the gamemode starts
 -----------------------------------------------------------]]
 function GM:Initialize()
 
@@ -98,6 +99,22 @@ end
 -----------------------------------------------------------]]
 function GM:PlayerSpawn(ply, transiton)
 	
+	if (ply:Team() == TEAM_SPEC) then
+
+		ply:StripAmmo();
+		ply:StripWeapons();
+		ply:Spectate(OBS_MODE_ROAMING);
+		ply:SetObserverMode(OBS_MODE_ROAMING);
+
+		return;
+
+	else
+
+		ply:UnSpectate();
+		ply:SetObserverMode(OBS_MODE_NONE);
+
+	end
+
 	if (fortwars.GetRoundState() == ROUND_BUILD) then
 
 		player_manager.SetPlayerClass(ply, "player_build");
@@ -109,6 +126,23 @@ function GM:PlayerSpawn(ply, transiton)
 	end
 
 	BaseClass.PlayerSpawn(self, ply, transiton);
+
+end
+
+--[[---------------------------------------------------------
+	Called once on the player's first spawn
+-----------------------------------------------------------]]
+function GM:PlayerInitialSpawn(ply, transiton)
+
+	--BaseClass.PlayerInitialSpawn(self, ply, transiton);
+
+	ply:SetNWInt("FW_Cash", tonumber(GetConVar("fw_start_cash"):GetInt()));
+
+	net.Start("FW_EntityCosts");
+	net.WriteTable(ENTITY_COSTS);
+	net.Send(ply);
+
+	fortwars.SetTeam(ply, TEAM_SPEC);	-- Player first spawns as spectator
 
 end
 
@@ -191,18 +225,23 @@ function GM:ShowHelp( ply )
 
 end
 
---[[---------------------------------------------------------
-	Called once on the player's first spawn
------------------------------------------------------------]]
-function GM:PlayerInitialSpawn( ply, transiton )
+function GM:EntityTakeDamage(target, dmg)
 
-	BaseClass.PlayerInitialSpawn( self, ply, transiton )
+	print(target:GetClass());
 
-	ply:SetNWInt("FW_Cash", tonumber(GetConVar("fw_start_cash"):GetInt()));
+	if (target:GetClass() == "npc_turret_floor") then
 
-	net.Start("FW_EntityCosts");
-	net.WriteTable(ENTITY_COSTS);
-	net.Send(ply);
+		target:SetHealth(target:Health() - dmg:GetDamage());
+
+		if (target:Health() <= 0) then
+
+			target:Input("SelfDestruct", target, target);
+
+		end
+
+	end
+
+	print(target:Health());
 
 end
 
@@ -369,3 +408,30 @@ local function RemoveStartWeapon(ply, command, args, argsStr)
 
 end
 concommand.Add("fw_cash", RemoveStartWeapon);
+
+local function SetTeamCommand(ply, command, args, argsStr)
+
+	if (IsValid(ply) and args[1]) then
+
+		if (args[1] == "TEAM_RED" or tonumber(args[1]) == 1) then
+
+			fortwars.SetTeam(ply, TEAM_RED);
+
+		elseif (args[1] == "TEAM_BLUE" or tonumber(args[1]) == 2) then
+
+			fortwars.SetTeam(ply, TEAM_BLUE);
+
+		elseif (args[1] == "TEAM_SPEC" or tonumber(args[1]) == 3) then
+
+			fortwars.SetTeam(ply, TEAM_SPEC);
+
+		else
+
+			ply:PrintMessage(HUD_PRINTCONSOLE, "Not a valid team. 1 = red, 2 = blue, and 3 = spec.");
+
+		end
+
+	end
+
+end
+concommand.Add("fw_team", SetTeamCommand);
