@@ -55,15 +55,19 @@ function fortwars.UpdateNPCRelationships()
 
       for kp, ply in pairs(player.GetAll()) do
 
-         local npcTeam = npc:GetNWInt("FW_Team", 1);
+         if (IsValid(npc) and IsValid(ply)) then
 
-         if (ply:Team() == npcTeam or ply:Team() == TEAM_SPEC) then
+            local npcTeam = npc:GetNWInt("FW_Team", 1);
 
-            npc:AddEntityRelationship(ply, D_LI, 99);
-
-         else
-
-            npc:AddEntityRelationship(ply, D_HT, 99);
+            if (ply:Team() == npcTeam or ply:Team() == TEAM_SPEC) then
+   
+               npc:AddEntityRelationship(ply, D_LI, 99);
+   
+            else
+   
+               npc:AddEntityRelationship(ply, D_HT, 99);
+   
+            end
 
          end
 
@@ -386,5 +390,11 @@ end
 function GM:PlayerButtonUp( ply, btn ) 
 
 	numpad.Deactivate( ply, btn )
+
+end
+
+function GM:PlayerDisconnected(ply)
+
+   cleanup.CC_Cleanup(ply, "gmod_cleanup", {});
 
 end

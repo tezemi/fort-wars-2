@@ -8,6 +8,7 @@ PLAYER.RunSpeed  = 300;
 
 function PLAYER:Loadout()
 
+    self.Player:StripWeapons();
     self.Player:RemoveAllAmmo();
 
     self.Player:Give("weapon_physcannon");

@@ -8,6 +8,7 @@ PLAYER.RunSpeed  = 300;
 
 function PLAYER:Loadout()
 
+    self.Player:StripWeapons();
     self.Player:RemoveAllAmmo();
 
     local convar = GetConVar("fw_start_weapons");

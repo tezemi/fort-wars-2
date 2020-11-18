@@ -20,7 +20,7 @@ function TOOL:LeftClick( trace )
 	if ( IsValid( trace.Entity ) && trace.Entity:IsPlayer() ) then return false end
 
 	-- If there's no physics object then we can't constraint it!
-	if ( SERVER && !util.IsValidPhysicsObject( trace.Entity, trace.PhysicsBone ) ) then return false end
+	if (SERVER and trace.Entity:GetClass() ~= "prop_physics" and trace.Entity:GetClass() ~= "worldspawn") then return false end
 
 	local iNum = self:NumObjects()
 	local Phys = trace.Entity:GetPhysicsObjectNum( trace.PhysicsBone )

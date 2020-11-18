@@ -7,7 +7,9 @@ include( "spawnmenu/spawnmenu.lua" )
 	spawn menu for any reason.
 -----------------------------------------------------------]]
 function GM:SpawnMenuEnabled()
-	return true
+
+	return true;
+
 end
 
 --[[---------------------------------------------------------
@@ -15,7 +17,15 @@ end
 	Return false to dissallow it.
 -----------------------------------------------------------]]
 function GM:SpawnMenuOpen()
-	return true
+
+	if (GetGlobalInt("FW_RoundState") == ROUND_BUILD) then
+
+		return true;
+
+	end
+
+	return false;
+	
 end
 
 function GM:SpawnMenuOpened()

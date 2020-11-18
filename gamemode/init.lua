@@ -43,14 +43,14 @@ CreateConVar("fw_start_cash", "3000", FCVAR_NOTIFY + FCVAR_REPLICATED);
 --
 -- Network Strings
 --
-util.AddNetworkString("FW_RoundState");
 util.AddNetworkString("FW_EntityCosts");
 util.AddNetworkString("FW_RequestJoinTeam");
+util.AddNetworkString("FW_SendPlayerTable");
 
 --
 -- Global Variables
 --
-SetGlobalFloat("fw_build_end", -1);
+SetGlobalInt("FW_RoundState", 0);
 
 --
 -- Make BaseClass available
@@ -60,15 +60,6 @@ DEFINE_BASECLASS("gamemode_base");
 --
 -- API Functions
 --
-function fortwars.SendRoundState(state, ply)
-
-	net.Start("FW_RoundState");
-	net.WriteInt(state, 32);
-
-	return ply and net.Send(ply) or net.Broadcast();
-
- end
-
 function fortwars.GetRoundState()
 
 	return GAMEMODE.roundState;
@@ -78,10 +69,90 @@ end
 function fortwars.SetRoundState(state)
 
 	GAMEMODE.roundState = state;
- 
-	fortwars.SendRoundState(state);
+
+	SetGlobalInt("FW_RoundState", state);
+
+	if (state == ROUND_BUILD) then
+
+		PrintMessage(HUD_PRINTTALK, "Changing to build mode!");
+
+	elseif (state == ROUND_FIGHT) then
+
+		PrintMessage(HUD_PRINTTALK, "The fight begins!");
+
+	end
+
+	for k, v in pairs(player.GetAll()) do
+		
+		if (state == ROUND_FIGHT) then
+
+			v:UnfreezePhysicsObjects();
+
+		end
+
+		v:SetNWBool("FW_Ready", false);		-- Reset player ready state
+		v:Spawn();							-- Respawn the player
+		
+	end
 
 end
+
+function fortwars.GetReadyPlayersCount()
+
+	local count = 0;
+	for k, v in pairs(player.GetAll()) do
+		
+		if (v:GetNWBool("FW_Ready", false)) then
+
+			count = count + 1;
+
+		end
+
+	end
+
+	return count;
+
+end
+
+function fortwars.ToggleReady(ply)
+
+	if (fortwars.GetRoundState() == ROUND_BUILD) then
+
+		ply:SetNWBool("FW_Ready", (not ply:GetNWBool("FW_Ready")));
+		if (ply:GetNWBool("FW_Ready")) then
+	
+			PrintMessage(HUD_PRINTTALK, ply:Nick() .. " is ready!");
+	
+		else
+	
+			PrintMessage(HUD_PRINTTALK, ply:Nick() .. " is not ready.");
+	
+		end
+
+		if (fortwars.GetReadyPlayersCount() >= #player.GetAll()) then
+
+			PrintMessage(HUD_PRINTTALK, "Everyone is ready!");
+			fortwars.SetRoundState(ROUND_FIGHT);
+
+		end
+
+	else
+
+		ply:PrintMessage(HUD_PRINTCONSOLE, "You can't toggle ready in fight mode.");
+		print("Can't toggle ready in fight mode!");
+
+	end
+
+end
+
+function fortwars.SendPlayerTable(ply)
+
+	net.Start("FW_RoundState");
+	net.WriteTable(player.GetAll());
+	net.Send(ply);
+
+end
+
 
 --[[---------------------------------------------------------
 	Name: gamemode:Initialize()
@@ -137,6 +208,7 @@ function GM:PlayerInitialSpawn(ply, transiton)
 	--BaseClass.PlayerInitialSpawn(self, ply, transiton);
 
 	ply:SetNWInt("FW_Cash", tonumber(GetConVar("fw_start_cash"):GetInt()));
+	ply:SetNWBool("FW_Ready", false);
 
 	net.Start("FW_EntityCosts");
 	net.WriteTable(ENTITY_COSTS);
@@ -207,7 +279,7 @@ function GM:PlayerShouldTakeDamage( ply, attacker )
 	if ( cvars.Bool( "sbox_godmode", false ) ) then return false end
 
 	-- No player vs player damage
-	if ( attacker:IsValid() && attacker:IsPlayer() && ply != attacker ) then
+	if ( attacker:IsValid() and attacker:IsPlayer() and ply ~= attacker ) then
 		return cvars.Bool( "sbox_playershurtplayers", true )
 	end
 
@@ -435,3 +507,14 @@ local function SetTeamCommand(ply, command, args, argsStr)
 
 end
 concommand.Add("fw_team", SetTeamCommand);
+
+local function SetTeamCommand(ply, command, args, argsStr)
+
+	if (IsValid(ply)) then
+
+		fortwars.ToggleReady(ply);
+
+	end
+
+end
+concommand.Add("fw_toggle_ready", SetTeamCommand);

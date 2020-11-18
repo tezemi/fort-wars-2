@@ -57,7 +57,7 @@ local physgun_limited = CreateConVar( "physgun_limited", "0", FCVAR_REPLICATED )
 
 function fortwars.IsSpec(ply)
 
-	return ply:GetObserverMode() ~= OBS_MODE_NONE; 
+	return ply:GetObserverMode() ~= OBS_MODE_NONE;
 
 end
 
@@ -207,18 +207,22 @@ end
    Desc: Player pressed the noclip key, return true if
 		  the player is allowed to noclip, false to block
 -----------------------------------------------------------]]
-function GM:PlayerNoClip( pl, on )
-	
-	return true;
+function GM:PlayerNoClip(ply, on)
 
-	-- Don't allow if player is in vehicle
-	--if ( !IsValid( pl ) || pl:InVehicle() || !pl:Alive() ) then return false end
-	
-	-- Always allow to turn off noclip, and in single player
-	--if ( !on || game.SinglePlayer() ) then return true end
+	if (not IsValid(ply) or ply:InVehicle() or not ply:Alive()) then
 
-	--return GetConVarNumber( "sbox_noclip" ) > 0
-	
+		return false;
+
+	end
+
+	if (GetConVarNumber("sv_cheats") == 1 or GetGlobalInt("FW_RoundState", 0) == ROUND_BUILD) then
+
+		return true;
+
+	end
+
+	return false;
+
 end
 
 function GM:PlayerFootstep(ply, pos, foot, sound, volume, rf)

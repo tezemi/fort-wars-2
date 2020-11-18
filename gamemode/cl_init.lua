@@ -11,6 +11,8 @@ fortwars = {};
 
 ENTITY_COSTS = {};
 
+PLAYERS = {};
+
 include( 'shared.lua' )
 include( 'cl_spawnmenu.lua' )
 include( 'cl_notice.lua' )
@@ -162,10 +164,23 @@ end
 function GetEntityCosts(len, ply)
 
 	ENTITY_COSTS = net.ReadTable();
-	print("Got entity costs!");
 
 end
 net.Receive("FW_EntityCosts", GetEntityCosts);
+
+function GetPlayerTable(len, ply)
+
+	PLAYERS = net.ReadTable();
+
+end
+net.Receive("FW_SendPlayerTable", GetPlayerTable);
+
+function GetRoundState(len, ply)
+
+	
+
+end
+net.Receive("FW_RoundState", GetRoundState);
 
 function GM:Initialize()
 
@@ -309,6 +324,15 @@ function GM:HUDPaint()
 
 	local client = LocalPlayer();
 
+	--
+	-- Paint Ready Up
+	--
+	
+
+
+	--
+	-- Paint Cash
+	--
 	local cashBackW = 90;
 	local cashBackH = 40;
 	local cashOffsetFromCenter = 1.06;
