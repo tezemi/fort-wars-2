@@ -7,6 +7,37 @@ ENTITY_COSTS["npc_turret_floor"] = 250;
 ENTITY_COSTS["npc_turret_ceiling"] = 400;
 ENTITY_COSTS["combine_mine"] = 75;
 
+ENTITY_COSTS["weapon_pistol"] = 75;
+ENTITY_COSTS["weapon_smg1"] = 100;
+ENTITY_COSTS["weapon_frag"] = 250;
+ENTITY_COSTS["weapon_357"] = 400;
+ENTITY_COSTS["weapon_shotgun"] = 200;
+ENTITY_COSTS["weapon_ar2"] = 300;
+ENTITY_COSTS["weapon_rpg"] = 600;
+ENTITY_COSTS["weapon_crossbow"] = 600;
+ENTITY_COSTS["weapon_slam"] = 600;
+
+
+--
+-- Defines what entites respawn after being picked up
+--
+RESPAWNABLE = {};
+RESPAWNABLE["item_healthkit"] = true;
+RESPAWNABLE["item_healthvial"] = true;
+RESPAWNABLE["item_battery"] = true;
+RESPAWNABLE["item_ammo_pistol"] = true;
+RESPAWNABLE["combine_mine"] = true;
+
+RESPAWNABLE["weapon_pistol"] = true;
+RESPAWNABLE["weapon_smg1"] = true;
+RESPAWNABLE["weapon_frag"] = true;
+RESPAWNABLE["weapon_357"] = true;
+RESPAWNABLE["weapon_shotgun"] = true;
+RESPAWNABLE["weapon_ar2"] = true;
+RESPAWNABLE["weapon_rpg"] = true;
+RESPAWNABLE["weapon_crossbow"] = true;
+RESPAWNABLE["weapon_slam"] = true;
+
 --
 -- Call this to add your own entities
 --
@@ -77,6 +108,67 @@ function fortwars.UpdateNPCRelationships()
 
 end
 
+function fortwars.ForceRespawnableRespawn(ent, solidFlags)
+
+   if (not IsValid(ent)) then return end
+
+   ent:SetColor(Color(255, 255, 255, 255));
+   ent:SetSolidFlags(solidFlags);
+
+   ent:CallOnRemove("FW_RespawnEntity" .. ent:GetCreationID(), function(ent)
+   
+      print(ent:GetClass());
+      local duplicate = ents.Create(ent:GetClass());
+      duplicate:SetModel(ent:GetModel());
+      duplicate:SetPos(ent:GetPos());
+      duplicate:Spawn();
+
+      fortwars.MakeRespawnable(duplicate);
+
+   end);
+
+end
+
+function fortwars.ForceAllRespawnablesRespawn()
+
+   for k, v in pairs(RESPAWNABLE) do
+      
+      if (v) then
+
+         for ek, ev in pairs(ents.FindByClass(k)) do
+             
+            fortwars.ForceRespawnableRespawn(ev, 152);
+
+         end
+
+      end
+
+   end
+
+end
+
+function fortwars.MakeRespawnable(ent)
+
+   ent:SetRenderMode(RENDERMODE_TRANSCOLOR);
+   ent:SetColor(Color(255, 255, 255, 127));
+   
+   local normalFlags = ent:GetSolidFlags();
+   print(normalFlags);
+
+   ent:SetSolidFlags(FSOLID_FORCE_WORLD_ALIGNED);
+
+   if (GetGlobalInt("FW_RoundState", ROUND_BUILD) == ROUND_FIGHT) then
+
+      timer.Simple(GetConVar("fw_entity_respawn_time"):GetInt(), function()
+
+         fortwars.ForceRespawnableRespawn(ent, normalFlags);
+
+      end);
+
+   end
+
+end
+
 --[[---------------------------------------------------------
    Name: fortwars.SetTeam(ply, team)
    Desc: Sets the player's team and forces a respawn.
@@ -113,6 +205,21 @@ function RequestJoinTeam(len, ply)
 
 end
 net.Receive("FW_RequestJoinTeam", RequestJoinTeam);
+
+function SpawnWeapon(len, ply)
+
+   local weaponPos = net.ReadVector();
+   local class = net.ReadString();
+
+   local e = ents.Create(class);
+   e:SetPos(weaponPos);
+   e:Spawn();
+
+   fortwars.MakeRespawnable(e);
+
+end
+net.Receive("FW_SpawnWeapon", SpawnWeapon);
+
 
 --[[---------------------------------------------------------
    Name: gamemode:PlayerSpawnObject( ply )
@@ -338,7 +445,7 @@ end
    Name: gamemode:PlayerSpawnedSENT( ply, ent )
    Desc: Called after the player has spawned a SENT
 -----------------------------------------------------------]]
-function GM:PlayerSpawnedSENT( ply, ent )
+function GM:PlayerSpawnedSENT(ply, ent)
 
    if (ENTITY_COSTS[ent:GetClass()]) then
 
@@ -349,6 +456,12 @@ function GM:PlayerSpawnedSENT( ply, ent )
 
    ply:AddCount("sents", ent);
    ent:SetNWEntity("FW_PlayerOwner", ply);
+
+   if (RESPAWNABLE[ent:GetClass()]) then -- TODO: Testing respawning
+
+      fortwars.MakeRespawnable(ent);
+
+   end
 
 end
 

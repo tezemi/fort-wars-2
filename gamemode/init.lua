@@ -39,6 +39,7 @@ include("spawnmenu/init.lua");
 --
 CreateConVar("fw_start_weapons", "weapon_crowbar weapon_pistol", FCVAR_NOTIFY + FCVAR_REPLICATED);
 CreateConVar("fw_start_cash", "3000", FCVAR_NOTIFY + FCVAR_REPLICATED);
+CreateConVar("fw_entity_respawn_time", "30", FCVAR_NOTIFY + FCVAR_REPLICATED);
 
 --
 -- Network Strings
@@ -46,6 +47,7 @@ CreateConVar("fw_start_cash", "3000", FCVAR_NOTIFY + FCVAR_REPLICATED);
 util.AddNetworkString("FW_EntityCosts");
 util.AddNetworkString("FW_RequestJoinTeam");
 util.AddNetworkString("FW_SendPlayerTable");
+util.AddNetworkString("FW_SpawnWeapon");
 
 --
 -- Global Variables
@@ -79,6 +81,8 @@ function fortwars.SetRoundState(state)
 	elseif (state == ROUND_FIGHT) then
 
 		PrintMessage(HUD_PRINTTALK, "The fight begins!");
+
+		fortwars.ForceAllRespawnablesRespawn();	-- Spawn transparent respawning things, like health kits
 
 	end
 

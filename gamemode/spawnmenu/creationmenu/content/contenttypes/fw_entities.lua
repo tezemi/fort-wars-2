@@ -9,7 +9,6 @@ hook.Add("PopulateFWEntities", "AddFWEntityContent", function(pnlContent, tree, 
     
 	for k, v in pairs(fortWarsEntities) do
 
-		print("Loading ent: " .. v.SpawnName .. " - " .. v.Category);
 		v.Category = v.Category or "Other";
 		categorised[v.Category] = categorised[v.Category] or {};
 		table.insert(categorised[v.Category], v);
@@ -49,13 +48,27 @@ hook.Add("PopulateFWEntities", "AddFWEntityContent", function(pnlContent, tree, 
 			
 			for k, ent in SortedPairsByMemberValue(v, "PrintName") do
 
-				local icon = spawnmenu.CreateContentIcon( ent.ScriptedEntityType or "entity", self.PropPanel, 
+				local icon = spawnmenu.CreateContentIcon(ent.ScriptedEntityType or "entity", self.PropPanel,
 				{
 					nicename	= ent.PrintName or ent.ClassName,
 					spawnname	= ent.SpawnName,
 					material	= ent.IconOverride or "entities/" .. ent.SpawnName .. ".png",
 					admin		= false
 				});
+
+				-- Spawn weapons in world, rather than in hand, like it normally would
+				if (ent.ScriptedEntityType == "weapon") then
+
+					icon.DoClick = function()
+			
+						net.Start("FW_SpawnWeapon");
+						net.WriteVector(LocalPlayer():GetEyeTrace().HitPos);
+						net.WriteString(ent.SpawnName);
+						net.SendToServer();
+
+					end
+
+				end
 
 				if (ENTITY_COSTS[ent.SpawnName]) then
 					
@@ -121,7 +134,15 @@ fortwars.AddEntity("Healing", "Health Charger", "item_healthcharger", "entity", 
 fortwars.AddEntity("Healing", "Suit Battery", "item_battery", "entity", nil);
 fortwars.AddEntity("Healing", "Suit Charger", "item_suitcharger", "entity", nil);
 
-fortwars.AddEntity("Weapons", "Pistol", "weapon_pistol", "weapon", nil);
+fortwars.AddEntity("Weapons", "HK USP (9mm Pistol)", "weapon_pistol", "weapon", nil);
+fortwars.AddEntity("Weapons", "MP7 (SMG1)", "weapon_smg1", "weapon", nil);
+fortwars.AddEntity("Weapons", "Fragmentation Grenade", "weapon_frag", "weapon", nil);
+fortwars.AddEntity("Weapons", "Colt Python (.357 Magnum)", "weapon_357", "weapon", nil);
+fortwars.AddEntity("Weapons", "Combine SPAS-12 (Shotgun)", "weapon_shotgun", "weapon", nil);
+fortwars.AddEntity("Weapons", "Overwatch Standard Issue Pulse Rifle (AR2)", "weapon_ar2", "weapon", nil);
+fortwars.AddEntity("Weapons", "Rocket-Propelled Grenade Launcher (RPG)", "weapon_rpg", "weapon", nil);
+fortwars.AddEntity("Weapons", "Crossbow", "weapon_crossbow", "weapon", nil);
+fortwars.AddEntity("Weapons", "Selectable Lightweight Attack Munition (S.L.A.M)", "weapon_slam", "weapon", nil);
 
 fortwars.AddEntity("Ammo", "Pistol Ammo", "item_ammo_pistol", "entity", nil);
 
